@@ -1,0 +1,68 @@
+package Trabalho_POO;
+
+import static org.junit.Assert.assertEquals;
+
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
+import java.util.ArrayList;
+import javax.swing.JOptionPane;
+
+public class Principal {
+	
+	
+	public static void main(String[] args) {
+		Gerenciador gerenciador = new Gerenciador();
+		
+		carregaArquivo();
+		
+		Localizacao localizacao = new Localizacao ("Avenida Planalto, Nº 15", "Bueno", "Goiânia", "Goiás");
+		Museu museu = new 	Museu ("Museu Pindamonhangaba", "Artes Plásticas", localizacao);
+		Obra obra = new Obra("O Pensador", "Piso B, final do corredor");
+		Autor autor = new Autor ("Auguste", "Rodin");
+		obra.addAutor(autor);
+		obra.addCategoria("Escultura");
+		obra.addCategoria("Humano");
+		museu.insereObra(obra);
+		
+		Obra obra2 = new Obra("Monalisa", "Piso A, início do corredor");
+		Autor autor2 = new Autor ("Leonardo", "Da Vinci");
+		obra2.addAutor(autor);
+		obra2.addAutor(autor2);
+		obra2.addCategoria("Pintura");
+		obra2.addCategoria("Retrato");
+		museu.insereObra(obra2);
+		
+		Principal.insereMuseu(museu);
+		
+		 museu = new 	Museu ("Museu TOPTOP", "Cinema", localizacao);
+		 obra = new Obra("Laranja mecânica", "Sala 2");
+		 autor = new Autor ("asd", "eeeeee");
+		obra.addAutor(autor);
+		obra.addCategoria("filme");
+		obra.addCategoria("muito bom");
+		museu.insereObra(obra);
+		
+		 obra2 = new Obra("get out", "térreo");
+		 autor2 = new Autor ("malucoo", "doido");
+		obra2.addAutor(autor);
+		obra2.addAutor(autor2);
+		obra2.addCategoria("filme");
+		obra2.addCategoria("foda");
+		museu.insereObra(obra2);
+		
+		Principal.insereMuseu(museu);
+		
+		System.out.println(buscaMuseuNome("museu toptop").getNome());
+		
+		salvaArquivo();
+	}
+	
+	
+}

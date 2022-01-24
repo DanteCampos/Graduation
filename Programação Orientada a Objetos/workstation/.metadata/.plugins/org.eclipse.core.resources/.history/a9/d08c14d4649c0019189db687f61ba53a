@@ -1,0 +1,194 @@
+package Trabalho_POO;
+
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
+import java.util.ArrayList;
+
+public class Gerenciador {
+	private ArrayList <Museu> museus = new ArrayList <Museu>();
+	
+
+	public static Museu buscaMuseuNome (String nome) {
+		int size = Principal.museus.size();
+		nome = nome.toUpperCase();
+		for (int i=0; i<size; i++) {
+			if (museus.get(i).getNome() == nome) return museus.get(i);
+		}
+		return null;
+	}
+	
+	public static boolean insereMuseu (Museu museu){
+		if (buscaMuseuNome(museu.getNome())!=null) {
+			System.out.println("JÁ TEM O"+museu.getNome());
+			return false; //não adiciona se já tem um com mesmo nomes
+		}
+		else return Principal.museus.add(museu); 
+	}
+	
+	public boolean excluiMuseuNome (String nome){
+		int size = Principal.museus.size();
+		nome = nome.toUpperCase();
+		
+		for (int i=0; i<size; i++) {
+			if (Principal.museus.get(i).getNome().equals(nome)) {
+				Principal.museus.remove(i);
+				return true;
+			}
+		}
+		return false;
+	}
+	
+	public boolean editaMuseu (Museu velho, Museu novo) {
+		int size = Principal.museus.size();
+		for (int i=0; i<size; i++) {
+			if (Principal.museus.get(i).equals(velho)) {
+				Principal.museus.remove(i);
+				Principal.museus.add(i, novo);
+				return true;
+			}
+		}
+		return false;
+	}
+	
+	public boolean salvaArquivo (){
+		try {
+			OutputStream os = new FileOutputStream ("dadosMuseu.txt");
+			OutputStreamWriter osw = new OutputStreamWriter (os);
+			BufferedWriter bw = new BufferedWriter (osw);
+			
+			bw.write(""+Museu.getSEQUENCIA());
+			bw.newLine();
+			bw.write(""+Obra.getSEQUENCIA());
+			bw.newLine();
+			
+			int qMuseus = this.museus.size();
+			bw.write(""+qMuseus);
+			bw.newLine();
+			Museu museuAtual;
+			
+			for (int i=0; i<qMuseus; i++){
+				museuAtual = this.museus.get(i);
+				
+				bw.write(museuAtual.getNome());
+				bw.newLine();
+				bw.write(museuAtual.getCategoria());
+				bw.newLine();
+				bw.write(museuAtual.getLocalizacao().getEndereco());
+				bw.newLine();
+				bw.write(museuAtual.getLocalizacao().getBairro());
+				bw.newLine();
+				bw.write(museuAtual.getLocalizacao().getCidade());
+				bw.newLine();
+				bw.write(museuAtual.getLocalizacao().getEstado());
+				bw.newLine();
+				bw.write(""+museuAtual.getCodigo());
+				bw.newLine();
+				
+				int qObras= museuAtual.getObras().size();
+				bw.write(""+qObras);
+				bw.newLine();
+				Obra obraAtual;
+				
+				for (int j = 0; j < qObras; j++) {
+					obraAtual = museuAtual.getObras().get(j);
+					
+					bw.write(obraAtual.getNome());
+					bw.newLine();
+					bw.write(obraAtual.getLocalizacao());
+					bw.newLine();
+					bw.write(""+obraAtual.getCodigo());
+					bw.newLine();
+					
+					int qCategorias = obraAtual.getCategorias().size();
+					bw.write(""+qCategorias);
+					bw.newLine();
+					ArrayList <String> categorias = obraAtual.getCategorias();
+					
+					for (int l=0; l<qCategorias; l++) {
+						bw.write(categorias.get(l));
+						bw.newLine();
+					}
+					
+					int qAutores = obraAtual.getAutores().size();
+					bw.write(""+qAutores);
+					bw.newLine();
+					ArrayList <Autor> autores = obraAtual.getAutores();
+					
+					for (int l=0; l<qAutores; l++) {
+						bw.write(autores.get(l).getNome());
+						bw.newLine();
+						bw.write(autores.get(l).getSobrenome());
+						bw.newLine();
+					}
+				}	
+			}
+			bw.close();
+			return true;
+		}catch (IOException ie) {
+			return false;
+		}
+	}
+	
+	public static boolean carregaArquivo () {
+		try {
+			InputStream is = new FileInputStream ("dadosMuseu.txt");
+			InputStreamReader isr = new InputStreamReader(is);
+			BufferedReader br = new BufferedReader (isr);
+			
+			Museu.setSEQUENCIA(Integer.parseInt(br.readLine()));
+			Obra.setSEQUENCIA(Integer.parseInt(br.readLine()));
+			
+			int qMuseus = Integer.parseInt(br.readLine());
+			for (int i=0; i<qMuseus; i++){
+				String nome = br.readLine();
+				String categoria = br.readLine();
+				
+				String endereco = br.readLine();
+				String bairro = br.readLine();
+				String cidade = br.readLine();
+				String estado = br.readLine();
+				Localizacao local = new Localizacao(endereco, bairro, cidade, estado);
+				
+				Museu museuAtual = new Museu (nome, categoria, local);
+				museuAtual.setCodigo(Integer.parseInt(br.readLine()));
+				this.museus.add(museuAtual);
+				
+				int qObras = Integer.parseInt(br.readLine());
+				for (int j = 0; j < qObras; j++) {
+					nome = br.readLine();
+					String localizacao = br.readLine();
+					
+					Obra obraAtual = new Obra (nome, localizacao);
+					obraAtual.setCodigo(Integer.parseInt(br.readLine()));
+					museuAtual.insereObra(obraAtual);
+					
+					int qCategorias = Integer.parseInt(br.readLine());
+					for (int l=0; l<qCategorias; l++) {
+						obraAtual.addCategoria(br.readLine());
+					}
+					
+					int qAutores = Integer.parseInt(br.readLine());
+					for (int l=0; l<qAutores; l++) {
+						nome = br.readLine();
+						String sobrenome = br.readLine();
+						obraAtual.addAutor(new Autor (nome, sobrenome));
+					}
+				}
+			}
+			br.close();
+			return true;
+			
+		}catch (IOException ie) {
+			return false;
+		}
+	}
+
+	
+}

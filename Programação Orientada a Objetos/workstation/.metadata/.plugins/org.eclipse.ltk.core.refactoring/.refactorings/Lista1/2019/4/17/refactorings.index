@@ -1,0 +1,7 @@
+1555816045505	Encapsulate field 'codigo'
+1555816050419	Encapsulate field 'nome'
+1555816053830	Encapsulate field 'genero'
+1555816056867	Encapsulate field 'ano'
+1555816059782	Encapsulate field 'ator'
+1555816640706	Encapsulate field 'total'
+1555817275621	Convert local variable 'sc' to field

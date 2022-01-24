@@ -1,0 +1,10 @@
+package Trabalho_POO;
+
+public class Principal {
+	
+	
+	public static void main(String[] args) {
+		Gerenciador gr = new Gerenciador ();
+		gr.carregaArquivo();
+	}
+}

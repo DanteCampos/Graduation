@@ -1,0 +1,7 @@
+package Trabalho_POO;
+
+import java.util.ArrayList;
+
+public class Gerenciador {
+	public ArrayList <Museu> museus = new ArrayList <Museu>();
+}

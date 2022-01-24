@@ -1,0 +1,5 @@
+Usar o GLPoints cria um número n fixo de pontos, que no caso do programa é 61, não importa o tamanho da janela.
+Ao escalar a projeção, a distância entre esses pontos não é preenchida.
+É claro que, ao diminuir a resolução iria "juntar" os pontos, mantendo a continuidade do segmento de reta.
+Porém o correto seria pintar pixel por pixel (com uma função de pintar pixel na janela) do segmento.
+E para isso, as coordenadas de de x0, y0, xEnd e xEnd devem estar escaladas de acordo com a resolução da janela.
