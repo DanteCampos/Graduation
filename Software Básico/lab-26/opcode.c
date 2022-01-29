@@ -1,0 +1,42 @@
+#include <stdio.h>
+
+
+
+typedef int (*FuncPtr)(int x);
+
+
+
+unsigned char codigo[] = {
+
+  0xf3, 0x0f, 0x1e, 0xfa,
+  0x55,
+  0x48, 0x89, 0xe5,
+  0x89, 0x7d ,0xfc,
+  0x8b, 0x45, 0xfc,
+  0x83, 0xc0, 0x01,
+  0x5d,
+  0xc3
+
+};
+
+
+
+int main()
+
+{
+
+  int i;
+
+  FuncPtr f = (FuncPtr)codigo;
+
+
+
+  i = f(10);
+
+  printf("%d\n", i);
+
+
+
+  return 0;
+
+}

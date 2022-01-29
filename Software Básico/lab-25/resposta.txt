@@ -1,0 +1,31 @@
+1)
+Você consegue inferir o significado das letras que aparecem na saída deste programa (U, T, etc.)?
+R: Sim, T se refere a código (funções, texto), D se refere a dados (variáveis) e U se refere a variáveis/funções ainda não ligadas (definidas em outros arquivos), ou seja, indefinidas para o arquivo.
+
+2)
+O que acontece? Há algum erro? Se sim, em que passo? Compilação? Ligação?
+R: Houve um erro de redefinição de variável, pois se o arquivo chama por char a, esta é outra variável, diferente de int a. Porém como têm o mesmo nome, isso daria problema para o linker. O processo dá erro já no compilador c, antes de converter para assembly, pois ele é o que verifica os tipos, que desaparecem para o linker.
+
+2.1)
+O que aconteceu? Você consegue explicar?
+R: O temp2 passou a tratar a variável "a" como char em vez de int. Quando isso atinge o linker, ele liga uma variável int para ser utilizada como char, o que causa erros.
+
+2.2)
+O que acontece agora? Algum erro ocorreu? Se sim, em um passo?
+R: "a" está sendo definido em dois arquivos diferentes, int a = 1; em temp2.c e int a = 0xAA11BB22; em temp1.c. Isso causa erro no linker que não pode escolher qual é a definição correta para iniciar a variável.
+
+2.3)
+O que acontece agora? Algum erro ocorreu? Se sim, em um passo?
+R: Não houve erro. Antes havia duas definições para "a", porém com a alteração de int a = 1; para int a; a definição se tornou uma declaração que referencia a definição que está no outro arquivo.
+
+2.4)
+O que acontece agora? Algum erro ocorreu? Se sim, em um passo?
+R: O programa funciona. Acredito que o "static" determina que a definição correta é ela.
+
+3)
+Qual é o tamanho do executável?
+16,8 kB
+
+3.1)
+Qual é o tamanho do executável? É o mesmo do exercício anterior? Se não, o que gerou essa mudança?
+1,1 MB. O tamanho aumentou porque no campo de dados está incluído o vetor e seus dados definidos já no próprio arquivo.
