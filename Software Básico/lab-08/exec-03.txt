@@ -1,0 +1,59 @@
+---------- Antes de executar o programa ----------
+
+union Y {
+  int   a;
+  short b;
+  char  c;
+};
+
+union Y vary;
+
+Como union Y é uma união, sua maior variável ditará seu tamanho, que nesse caso será 4 bytes, por conta do int
+
+vary.a = 0xA1A2A3A4;
+printf("vary.a: \n");
+dump(&vary, sizeof(vary));
+
+O conteúdo de vary é o int a = 0xA1A2A3A4, aqui, os bytes da união têm o seguinte esquema:
+a a a a
+Assim, considerando um computador que opera em little endian, e o endereço de vary como 0x100, esse será o dump:
+
+vary.a: 
+0x00000100 - 0xA4
+0x00000101 - 0xA3
+0x00000102 - 0xA2
+0x00000103 - 0xA1
+
+vary.b = 0xA1A2;
+printf("vary.b: \n");
+dump(&vary, sizeof(vary));
+
+Agora a vary irá usar seus 2 primeiros bytes para guardar o short b = 0xA1A2
+Só que, como os dois bytes seguintes não são alterados, eles continuam com o conteúdo de a, dessa forma:
+b b a a
+Logo, o dump irá printar os 4 bytes de vary da seguinte forma (em little endian):
+
+vary.b: 
+0x00000100 - 0xA2
+0x00000101 - 0xA1
+0x00000102 - 0xA2
+0x00000103 - 0xA1
+
+vary.c = 0xC1;
+printf("vary.c: \n");
+dump(&vary, sizeof(vary));
+
+vary.c é um char, então seu acesso será apenas ao primeiro byte de vary
+Dessa forma, ao fazer vary.c = 0xC1, o esquema da união será o seguinte:
+c b a a
+Logo, o dump irá printar os 4 bytes de vary dessa forma (em little endian):
+
+vary.c: 
+0x00000100 - 0xC1
+0x00000101 - 0xA1
+0x00000102 - 0xA2
+0x00000103 - 0xA1
+
+---------- Depois de executar o programa ----------
+
+Ocorreu tudo como previsto

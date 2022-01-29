@@ -1,0 +1,30 @@
+--------- Explicando a questão ---------
+
+signed char sc = -1;
+unsigned int ui = sc;
+
+Convertendo -1 para binário em um byte:
+1 em binário: 0000 0001
+Inverte: 1111 1110
+Soma 1: 1111 1111
+
+Logo, o valor de sc na memória é, em hexadecimal: 0xFF
+
+Como o unsigned int tem 4 bytes, é realizado um truncamento seguro
+O valor de sc é colocado no byte menos significativo de ui
+Então, ui = 0x000000FF
+
+Agora, para obter 0xFFFFFFFF, eu só consigo imaginar a situação de truncamento para um int
+Como um int tem sinal, o bit mais à esquerda de sc seria copiado para os outros 24 bits de ui
+E uma forma disso acontecer poderia ser:
+Copia sc para o byte mais significativo de ui: ui = 0xFF000000
+Faz shift de ui: ui = ui >> (sizeof(signed char) - sizeof(unsigned int))*8
+Agora ui tem o valor 0xFFFFFFFF
+
+Então, a única forma de você obter 0xFFFFFFFF seria estendendo o sinal
+Mas não faz sentido, pois não há sinal em um unsigned int
+Portanto, apesar de entender a decisão tomada no compilador de exemplo, não acho que foi inteligente
+
+--------- Após testar o código ---------
+Meu computador tomou a segunda opção e o valor de ui foi 0xFFFFFFFF
+Não consigo imaginar o motivo dessa decisão, mas como é o gcc, acredito que haja algum

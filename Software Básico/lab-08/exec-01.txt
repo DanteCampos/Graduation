@@ -1,0 +1,59 @@
+---------- Antes de executar o programa ----------
+
+int a[2] = {0xA1A2A3A4, 0xB1B2B3B4};
+
+short b[2][3] = {
+  {0xA1A2, 0xB1B2, 0xC1C2},
+  {0xD1D2, 0xE1E2, 0xF1F2}
+};
+
+Ao declarar as variáveis a[2] e b[2][3], ambas são ponteiros
+
+printf("size(a): %lu\n", sizeof(a));
+printf("size(b): %lu\n", sizeof(b));
+
+Considerando uma arquitetura de 64 bits com ponteiro de 64 bits, as linhas printadas seriam:
+
+size(a): 8
+size(b): 8
+
+Como int a[2] é um vetor de 2 inteiros, ocupará 8 bytes na memória, sendo 4 pro primeiro inteiro, e 4 pro segundo
+
+printf("a: \n");
+dump(a, sizeof(a));
+
+Considerando que o endereço de a (que é o de a[0]) é 0x100, em little endian, as linhas printadas serão:
+
+a:
+0x00000100 - 0xA4
+0x00000101 - 0xA3
+0x00000102 - 0xA2
+0x00000103 - 0xA1
+0x00000104 - 0xB4
+0x00000105 - 0xB3
+0x00000106 - 0xB2
+0x00000107 - 0xB1
+
+printf("b: \n");
+dump(b, sizeof(b));
+
+Já para o caso de short b[2][3], são ocupados 6 shorts, ou 12 bytes
+A ordem linear da memória é dos elementos da primeira linha, então os da segunda, e assim por diante
+Portanto, em little endian, e considerando o endereço de b como 0x200, as linhas printadas serão:
+
+0x00000200 - 0xA2
+0x00000201 - 0xA1
+0x00000202 - 0xB2
+0x00000203 - 0xB1
+0x00000204 - 0xC2
+0x00000205 - 0xC1
+0x00000206 - 0xD2
+0x00000207 - 0xD1
+0x00000208 - 0xE2
+0x00000209 - 0xE1
+0x0000020A - 0xF2
+0x0000020B - 0xF1
+
+---------- Depois de executar o programa ----------
+
+Ocorreu tudo exatamente como foi previsto

@@ -1,0 +1,109 @@
+----------- Antes de executar -----------
+
+struct X {
+  int   a;
+  short b;
+  int   c;
+};
+
+Fazendo o esquema da estrutura:
+
+a a a a b b P P c c c c
+
+Em que cada letra é 1 byte, e P é um byte de padding
+
+struct X x = {
+     .a = 2048,
+     .b = 17,
+     .c = 0xCafeBabe
+};
+
+Achando o valor de a em decimal e hexadecimal em int:
+a = 0x00000800
+a = 2048
+
+Achando o valor de b em decimal e hexadecimal em int
+b = 0x0011
+b = 17
+
+Achando o valor de c em decimal e hexadecimal em int
+c = 0xCAFEBABE
+O primeiro bit de c é 1, logo, devemos convertê-lo:
+c = 1100 1010 1111 1110 1011 1010 1011 1110 em binário
+Invertendo c:
+c = 0011 0101 0000 0001 0100 0101 0100 0001 em binário
+Em decimal:
+c = -889275713
+
+Na estrutura, em hexadecimal e little endian, temos o seguinte esquema:
+
+00 08 00 00 11 00 PP PP BE BA FE CA
+
+printf("x.a = %d\n", x.a);
+printf("x.b = %d\n", x.b);
+printf("x.c = %d\n", x.c);
+
+Como os valores printados estão sendo mostrados em formato decimal, o resultado apresentado será:
+x.a = 2048
+x.b = 17
+x.c = -889275713
+
+pChar  = (char*)&x;
+pChar  = pChar + 4;
+*pChar = *pChar | 0x20;
+
+pChar é um ponteiro de char que aponta para o endereço do começo da estrutura
+pChar anda 4 bytes pra direita (pois é um ponteiro de char), agora aponta pro quinto byte da estrutura
+O conteúdo do byte ao qual pChar aponta (o primeiro byte do short b) recebe sua união com 0x20
+
+O conteúdo de pChar é 0x11
+
+Em binário, 0x20 é:	0010 0000
+Em binário, 0x11 é:	0001 0001
+A união fica:		0011 0001
+Que é, em hexadecimal: 0x31
+
+Assim, a estrutura, em hexadecimal e little endian, fica da seguinte forma:
+
+00 08 00 00 31 00 PP PP BE BA FE CA
+
+A única variável altera foi o short b
+
+Achando o valor de b em decimal e hexadecimal em int
+b = 0x0031
+b = 49
+
+printf("x.a = %d\n", x.a);
+printf("x.b = %d\n", x.b);
+printf("x.c = %d\n", x.c);
+
+Como os valores printados estão sendo mostrados em formato decimal, o resultado apresentado será:
+x.a = 2048
+x.b = 49
+x.c = -889275713
+
+pShort = (short*)&x;
+pShort[3] = 0xFFFF;
+
+pShort é um ponteiro de short que aponta para o começo da estrutura
+pShort[3] é o sétimo byte da estrutura (pois caminha de 2 em 2), que é o primeiro byte de padding
+Como pShort é um ponteiro de short, o byte para o qual aponta e também o à direita irão receber 0xFF cada um
+
+Assim, a estrutura, em hexadecimal e little endian, fica da seguinte forma:
+
+00 08 00 00 31 00 FF FF BE BA FE CA
+
+Como só o padding recebeu o valor, nenhuma variável foi alterada
+
+printf("x.a = %d\n", x.a);
+printf("x.b = %d\n", x.b);
+printf("x.c = %d\n", x.c);
+
+Como os valores printados estão sendo mostrados em formato decimal, o resultado apresentado será:
+x.a = 2048
+x.b = 49
+x.c = -889275713
+
+----------- Depois de executar -----------
+
+Ocorreu tudo como previsto

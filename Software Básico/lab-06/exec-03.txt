@@ -1,0 +1,75 @@
+----------- Analisando os códigos antes de executar -----------
+
+----------- prog-01.c -----------
+unsigned int x = 0xffffffff;
+unsigned int y = 2;
+
+x é o maior número possível num unsigned int, em decimal: x = 4294967295
+y é 2, em hexadecimal (e com os 4 bytes do unsigned int) = 00000002
+
+printf("x = %d, y = %d\n", x, y);
+Vai printar os valores em decimal de x e y, a linha de printada será:
+x = 4294967295, y = 2
+
+printf("x é menor do que y? %s\n", (x<y) ? "sim" : "não");
+A comparação x<y é uma comparação entre tipos iguais, então não há problema. A linha printada será:
+x é menor do que y? não
+
+----------- prog-02.c -----------
+int x = 0xffffffff;
+int y = 2;
+
+x tem o bit mais à esquerda igual a 1, logo, é um número negativo, convertendo ele:
+ffffffff invertido é 00000000, somando 1 fica 00000001
+Logo, em decimal, x = -1
+y é 2, em hexadecimal (e com os 4 bytes do int) = 00000002
+
+printf("x = %d, y = %d\n", x, y);
+Vai printar os valores em decimal de x e y, a linha de printada será:
+x = -1, y = 2
+
+printf("x é menor do que y? %s\n", (x<y) ? "sim" : "não");
+A comparação x<y é uma comparação entre tipos iguais, então não há problema. A linha printada será:
+x é menor do que y? sim
+
+----------- prog-03.c -----------
+int x = 0xffffffff;
+unsigned int y = 2;
+
+x tem o bit mais à esquerda igual a 1, logo, é um número negativo, convertendo ele:
+ffffffff invertido é 00000000, somando 1 fica 00000001
+Logo, em decimal, x = -1
+y é 2, em hexadecimal (e com os 4 bytes do unsigned int) = 00000002
+
+printf("x = %d, y = %d\n", x, y);
+Vai printar os valores em decimal de x e y, a linha de printada será:
+x = -1, y = 2
+
+printf("x é menor do que y? %s\n", (x<y) ? "sim" : "não");
+Aqui temos um problema, os tipos de x e y são diferentes, um tem sinal, o outro não, mas ambos têm mesmo tamanho
+Nesse caso, o computador irá converter um deles para o tipo do outro em questão, para comparar tipos iguais
+Como ambos têm 4 bytes, a conversão apenas irá "tratar" o número de forma diferente
+Eu não sei se será feita a conversão de x para unsigned int ou y para int
+
+Caso a conversão seja de x para unsigned int, x terá o valor decimal x = 4294967295, e então a linha printada será:
+x é menor do que y? não
+
+Caso a conversão seja de y para int, y ainda terá o valor decimal y = 2, e então a linha printada será:
+x é menor do que y? sim
+
+Ao executar o código verei qual é a escolha do computador.
+
+----------- Analisando os códigos depois de executar -----------
+
+----------- prog-01.c -----------
+O valor printado de x foi -1, e não 4294967295. Isso pode ter ocorrido pela função print ter utilizado %d
+Existe a %u para números sem sinal, então julgo que o print tratou x como int
+Ainda assim, a comparação x<y funcionou corretamente, comparando x e y como unsigned int, cada
+
+----------- prog-02.c -----------
+Aqui correu tudo bem, o x e o y foram apresentados e comparados como inteiros com sinal
+
+----------- prog-03.c -----------
+A representação não deu problema, ambos os números foram apresentados como inteiros com sinal
+A resposta para a comparação x<y foi "não", logo, vejo que a conversão decidida foi de x para unsigned int
+Assim, a comparação x<y foi a mesma de 4294967295<2, que é falsa

@@ -1,0 +1,39 @@
+---------- Antes de executar o programa ----------
+
+struct X {
+  int   a;
+  short b;
+  int   c;
+};
+
+struct X varx = {0xA1A2A3A4, 0xB1B2, 0xC1C2C3C4};
+
+A struct X tem int como sua maior variável, logo, o tamanho da estrutura deve ser múltiplo de 4
+Como há um short entre os ints, serão usados 2 bytes de padding depois do b para c começar num múltiplo de 4
+Assim, a estrutura linear terá a seguinte configuração:
+
+a a a a b b P P c c c c
+
+Sendo P um byte de padding
+Assim, a struct X tem tamanho 12
+
+Considerando um sistema que opera com little endian, e que o endereço  da varx é 0x100, seu dump será:
+
+0x00000100 - 0xA4
+0x00000101 - 0xA3
+0x00000102 - 0xA2
+0x00000103 - 0xA1
+0x00000104 - 0xB2
+0x00000105 - 0xB1
+0x00000106 - 0xPP
+0x00000107 - 0xPP
+0x00000108 - 0xC4
+0x00000109 - 0xC3
+0x0000010A - 0xC2
+0x0000010B - 0xC1
+
+Sendo PP um byte de padding, que pode ser 8 bits 0 ou só lixo de memória
+
+---------- Depois de executar o programa ----------
+
+Ocorreu tudo como previsto, só atento que, no meu computador, cada byte de padding são 8 bits 0

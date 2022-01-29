@@ -1,0 +1,51 @@
+-------- Analisando o código antes de executar --------
+short s = -3
+Convertendo -3 para binário:
+3 em binário: 11
+Completando os 2 bytes do short:
+0000 0000 0000 0011
+Invertendo os bits:
+1111 1111 1111 1100
+Somando 1:
+1111 1111 1111 1101
+Em hexadecimal:
+F F F D
+
+Como meu computador representa inteiros em little endian, o dump de memória terá o seguinte resultado:
+0x100 - 0xFD
+0x101 - 0xFF
+
+int i = -151
+Convertendo -151 para binário:
+3 em binário: 10010111
+Completando os 4 bytes do short:
+0000 0000 0000 0000 0000 0000 1001 0111
+Invertendo os bits:
+1111 1111 1111 1111 1111 1111 0110 1000
+Somando 1:
+1111 1111 1111 1111 1111 1111 0110 1001
+Em hexadecimal:
+F F F F F F 6 9
+
+Como meu computador representa inteiros em little endian, o dump de memória terá o seguinte resultado:
+0x200 - 0x69
+0x201 - 0xFF
+0x202 - 0xFF
+0x203 - 0xFF
+
+char c = 150
+Convertendo 150 para binário:
+3 em binário: 1001 0110
+Em hexadecimal:
+9 6
+
+Como o char tem apenas 1 byte para representar números positivos e negativos, o seu maior número positivo é 127.
+150 > 127, logo, haverá um overflow que talvez não deixe o código ser compilado ou executado.
+Se o computador aceitar simplesmente truncar e copiar o byte para o char c, esse sera o dump de memória:
+0x300 - 0x96
+
+-------- Analisando o código depois de executar ----------
+
+Como supus, o computador apenas truncou o valor para dentro do char c.
+Todas as conversões e apresentações, inclusive a ordem dos bytes, estavam corretas.
+A única diferença da execução para o que previ foi a quantidade de caracteres no endereço do ponteiro, o que não vem ao caso.
