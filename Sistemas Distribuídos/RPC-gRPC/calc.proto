@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+package calc;
+
+service Calculator {
+    rpc add(InNumbers) returns (OutNumber){}
+	rpc mult(InNumbers) returns (OutNumber){}
+	rpc pow(InNumbers) returns (OutNumber){}
+  }
+
+message InNumbers {
+    double a = 1;
+    double b = 2;
+}
+
+message OutNumber {
+    double result = 1;
+}
