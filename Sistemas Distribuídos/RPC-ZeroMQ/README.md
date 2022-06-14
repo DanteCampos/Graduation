@@ -15,4 +15,4 @@ Printa a operação enviada e o resultado recebido.
 **ZeroMQ**:  
 Funciona assim como programação direta nos sockets, com uma operação bloqueante para receber a mensagem do cliente ou enviar a mensagem ao servidor.
 
-[**Vídeo Demonstrativo.**](https://youtu.be/bNRKtJU8DXQ)
+[**Vídeo Demonstrativo**](https://youtu.be/bNRKtJU8DXQ)
