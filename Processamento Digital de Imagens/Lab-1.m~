@@ -1,7 +1,0 @@
-mat = []
-
-for i = 1:1:40
-    mat = [mat;i]
-endfor
-
-disp(mat)
