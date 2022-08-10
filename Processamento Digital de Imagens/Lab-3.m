@@ -1,4 +1,4 @@
-% Laboratório 2 - Processamento Digital de Imagens
+% Laboratório 3 - Processamento Digital de Imagens
 % Daniel Campos da Silva - 201801485
 
 % Para visualizar as questões, basta colocar entre %{ e %} as que deseja ignorar
