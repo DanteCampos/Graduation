@@ -1,0 +1,4 @@
+ALTER TABLE Cliente
+    ADD telefone VARCHAR(20) NOT NULL,
+    ADD endereco VARCHAR(120) NOT NULL,
+    ADD email VARCHAR(120) NOT NULL;

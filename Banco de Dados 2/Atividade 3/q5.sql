@@ -1,0 +1,20 @@
+SELECT c.*
+FROM consulta c
+JOIN medico m 
+USING(bi)
+WHERE EXTRACT(MONTH FROM c.data) = 10
+ORDER BY m.nome, c.data
+;
+
+/*Resultado:
+  9790 | 1963-10-06 |   16 | vAE03 | DA754
+  8883 | 1965-10-20 |   46 | vAE03 | CHOU4929
+  2893 | 1966-10-27 |   96 | vAE03 | PI610
+ 11596 | 1968-10-09 |   80 | vAE03 | XQOU3467
+  5786 | 1969-10-02 |   89 | vAE03 | QREO9261
+  2759 | 1983-10-09 |   85 | vAE03 | LYIA9645
+  8040 | 1988-10-24 |   83 | vAE03 | TROO9880
+  9686 | 1995-10-16 |   21 | vAE03 | WBIE8674
+  6765 | 1995-10-17 |   17 | vAE03 | VXOI3742
+  4418 | 1999-10-06 |   41 | vAE03 | RZIA1719
+*/

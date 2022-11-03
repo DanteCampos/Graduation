@@ -1,0 +1,2 @@
+ALTER TABLE Produto
+    ADD unidade INTEGER NOT NULL;

@@ -1,0 +1,19 @@
+SELECT c.*
+FROM consulta c 
+LEFT JOIN diagnosticada d
+USING(num)
+WHERE d.num IS NULL
+;
+
+/*Resultado:
+   103 | 1976-07-26 |   47 | f0447 | YQEI3167
+   108 | 2003-12-08 |    2 | h9F20 | BE215
+   119 | 1986-03-26 |   23 | y7F55 | PFEO4156
+   126 | 1972-08-07 |   89 | n2E03 | CTAA3688
+   130 | 1973-08-27 |   11 | c1C19 | TTEA4893
+   134 | 1985-12-10 |   31 | qDB93 | WVOU9502
+   137 | 1960-01-01 |   41 | rB606 | TNUO3914
+   141 | 2001-07-11 |   19 | m6224 | FSAU2330
+   142 | 1988-03-25 |   41 | p8B47 | PBAO4763
+   145 | 1994-04-09 |   23 | zDB43 | PJAA8376
+*/

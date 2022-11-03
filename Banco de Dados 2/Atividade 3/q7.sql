@@ -1,0 +1,14 @@
+SELECT c.*
+FROM consulta c
+WHERE c.data = '1993-04-07'
+ORDER BY c.num
+LIMIT 4
+OFFSET 3
+;
+
+/*Resultado:
+  7007 | 1993-04-07 |   46 | g5595 | SBUA3402
+ 11444 | 1993-04-07 |   40 | k5D97 | WQII2464
+ 12055 | 1993-04-07 |   68 | jBA46 | RLUU6862
+ 13961 | 1993-04-07 |   43 | z2615 | QKIO7136
+*/

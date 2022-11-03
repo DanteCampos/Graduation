@@ -1,0 +1,3 @@
+ALTER TABLE Venda
+    ADD COLUMN codVendedor INTEGER NOT NULL,
+    ADD COLUMN codCliente INTEGER NOT NULL;
