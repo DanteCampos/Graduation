@@ -1,3 +1,9 @@
+-- Daniel Campos da Silva, 29/11/2022
+-- Ciência da Computação
+-- Banco de Dados 2
+
+-- Atividade 4
+
 CREATE OR REPLACE FUNCTION spIncluirCidade (
     nomeEstado estado.nome%TYPE,
     siglaEstado estado.uf%TYPE,
