@@ -191,6 +191,8 @@ int main(){
       return 0;
     }
 
+    printf ("Starting %s x %s batch\n\n", directories_G[dirIndex], directories_H[dirIndex]);
+
     // Reading files of the directory
     while (1) {
       
