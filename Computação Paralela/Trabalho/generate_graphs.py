@@ -6,12 +6,22 @@ from networkx import write_edgelist
 import os
 from datetime import datetime as dt
 
+# Probabilities of connecting a pair of vertices
+probabilities = [0.25, 0.5, 0.75]
+
+# How much graphs with how much vertices are generated
+min_vertices = 50
+max_vertices = 700
+step = 50
+
+print ("Max memory needed for computing a cartesian product =", max_vertices^4/16)
+
 print("Generating...\n")
 now = dt.now()
-for p in [0.25, 0.5, 0.75]:
+for p in probabilities: 
   if not os.path.exists(str(p)):
     os.makedirs(str(p))
-  for n in range(50, 701, 50):
+  for n in range(min_vertices, max_vertices+1, step): 
     g = erdos_renyi_graph(n, p)
     write_edgelist(g, str(p)+"/"+str(n)+"."+str(len(g.edges))+".graph", data=False)
 after = dt.now()
