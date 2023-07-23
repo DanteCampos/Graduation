@@ -11,10 +11,10 @@ probabilities = [0.25, 0.5, 0.75]
 
 # How much graphs with how much vertices are generated
 min_vertices = 50
-max_vertices = 700
+max_vertices = 500
 step = 50
 
-print ("Max memory needed for computing a cartesian product =", max_vertices**4/16)
+print ("Max memory needed for computing a cartesian product =", max_vertices**4/16/1024**3, "gigabytes")
 
 print("Generating...\n")
 now = dt.now()
