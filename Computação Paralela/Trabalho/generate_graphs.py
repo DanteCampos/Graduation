@@ -14,7 +14,7 @@ min_vertices = 50
 max_vertices = 700
 step = 50
 
-print ("Max memory needed for computing a cartesian product =", max_vertices^4/16)
+print ("Max memory needed for computing a cartesian product =", max_vertices**4/16)
 
 print("Generating...\n")
 now = dt.now()
