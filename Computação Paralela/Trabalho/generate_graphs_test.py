@@ -8,12 +8,12 @@ from datetime import datetime as dt
 
 print("Generating...\n")
 now = dt.now()
-for p in [0.25, 0.5, 0.75]:
-#for p in [0.95, 0.85, 0.75]:
+#for p in [0.25, 0.5, 0.75]:
+for p in [0.95, 0.85, 0.75]:
   if not os.path.exists(str(p)):
     os.makedirs(str(p))
-  for n in range(50, 601, 50):
-  #for n in range(3, 7, 1):
+  #for n in range(50, 601, 50):
+  for n in range(3, 7, 1):
     g = erdos_renyi_graph(n, p)
     write_edgelist(g, str(p)+"/"+str(n)+"."+str(len(g.edges))+".graph", data=False)
 after = dt.now()
