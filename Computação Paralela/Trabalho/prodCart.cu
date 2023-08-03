@@ -17,30 +17,34 @@ unsigned long long upper_triangle_position (unsigned long long i, unsigned long 
     // A beautiful example of branchless programming
     // If i>=j, switch j and i (false = 0, true = 1);
     return (i < j)*(i*vertices - (i*(i+1))/2 + j - i -1)
-        + (i >= j)*(j*vertices - (j*(j+1))/2 + i - j -1);
+         + (i >=j)*(j*vertices - (j*(j+1))/2 + i - j -1);
 }
 
 // Returns the number of bytes needed for the bitmap
-unsigned long long bitmap_size (unsigned long long vertices){
+unsigned long long bitmap_size_int (unsigned long long vertices){
     unsigned long long size = (vertices*(vertices-1))/2;
-    return size/8+(size%8 != 0);
+    return size/32+(size%32 != 0);
+}
+
+// Returns the number of bytes needed for the bitmap
+unsigned long long bitmap_size_byte (unsigned long long vertices){
+    return bitmap_size_int(vertices)*4;
 }
 
 // Inserts an edge i-j in a bitmap upper triangle adjacency matrix
-void bitmap_write(char* bitmap, unsigned long long i, unsigned long long j, unsigned long long vertices){
+void bitmap_write(unsigned int* bitmap, unsigned long long i, unsigned long long j, unsigned long long vertices){
     unsigned long long position = upper_triangle_position(i, j, vertices);
-    char mask = 0b10000000 >> (position % 8);
-    bitmap[position/8] = (mask | bitmap[position/8]);
+    unsigned int mask = 0x80000000 >> (position % 32);
+    bitmap[position/32] = (mask | bitmap[position/32]);
     return;
 }
 
 // Gets the edge i-j in an upper triangle adjacency matrix
-char bitmap_get(char* bitmap, unsigned long long i, unsigned long long j, unsigned long long vertices){
-    printf("Getting %llu-%llu, vertices: %llu\n", i,j,vertices);
+char bitmap_get(unsigned int bitmap[], unsigned long long i, unsigned long long j, unsigned long long vertices){
     unsigned long long position = upper_triangle_position(i, j, vertices);
-    char mask = 0b10000000 >> (position % 8);
-    printf("Position: %llu, access: %llu\n", position, position/8);
-    char result = (mask & bitmap[position/8]) != 0;
+    unsigned long long location = position/32;
+    unsigned int mask = 0x80000000 >> (position % 32);
+    char result = (mask & bitmap[location]) != 0;
     return result;
 }
 
@@ -109,7 +113,7 @@ void write_time_file (char time_file_name[], clock_t delta_time){
   fclose(time_file);
 }
 
-void write_result_file (char result_file_name[], char P[], unsigned long long vertices_P){
+void write_result_file (char result_file_name[], unsigned int P[], unsigned long long vertices_P){
   FILE *result_file;
   unsigned long long i, j;
   result_file = fopen(result_file_name, "w");
@@ -157,7 +161,7 @@ void printEdgeArray (Edge* edge_list, unsigned long long edges){
 }
 
 // Print the Bitmap of an Upper Triangle as an edge list
-void print_bitmap_upper (char P[], unsigned long long vertices_P){
+void print_bitmap_upper (unsigned int P[], unsigned long long vertices_P){
 	unsigned long long i, j;
 	for (i = 0; i < vertices_P; i++){
 		for (j = i+1; j < vertices_P; j++)
@@ -170,24 +174,25 @@ void print_bitmap_upper (char P[], unsigned long long vertices_P){
 // Calculates part of the cartesian product P = G x H iterating only edges of G
 // P is a bitmap of the adjancy matrix upper triangle
 __global__
-void cartProdBitmapG (Edge* G, char* P, unsigned long long edges_G, unsigned long long vertices_H, unsigned long long vertices_P){
+void cartProdBitmapG (Edge* G, unsigned int* P, unsigned long long edges_G, unsigned long long vertices_H, unsigned long long vertices_P){
   unsigned long long m, position;
   unsigned long long v1P, v2P;
-  char mask;
+  unsigned int mask;
 
   unsigned long long idx = blockIdx.x * blockDim.x + threadIdx.x;
   unsigned int stride = gridDim.x * blockDim.x;
   for (; idx < edges_G; idx += stride){
     for (m = 0; m < vertices_H; m++){
       v1P = G[idx].v1*vertices_H + m;
-      v2P = G[idx].v2*vertices_H + m; 
-      //bitmap_write(P, v1P, v2P, vertices_P);
+      v2P = G[idx].v2*vertices_H + m;
+      printf("%llu-%llu\n", v1P, v2P);
+      
       position = (v1P < v2P)*(v1P*vertices_P - (v1P*(v1P+1))/2 + v2P - v1P -1)
         + (v1P >= v2P)*(v2P*vertices_P - (v2P*(v2P+1))/2 + v1P - v2P -1);
-      mask = 0b10000000 >> (position % 8);
+      mask = 0x80000000 >> (position % 32);
       
-      // Critic zone, use atomic CAS (compare and swap)
-      P[position/8] = (mask | P[position/8]);
+      // To evict running condition, use atomic OR
+      atomicOr(&P[position/32], mask);
 		}
   }
 	return;
@@ -196,10 +201,10 @@ void cartProdBitmapG (Edge* G, char* P, unsigned long long edges_G, unsigned lon
 // Calculates part of the cartesian product P = G x H iterating only edges of H
 // P is a bitmap of the adjancy matrix upper triangle
 __global__
-void cartProdBitmapH (Edge* H, char* P, unsigned long long edges_H, unsigned long long vertices_G, unsigned long long vertices_P){
+void cartProdBitmapH (Edge* H, unsigned int* P, unsigned long long edges_H, unsigned long long vertices_G, unsigned long long vertices_P){
   unsigned long long m, position;
   unsigned long long v1P, v2P;
-  char mask;
+  unsigned int mask;
 
   unsigned long long idx = blockIdx.x * blockDim.x + threadIdx.x;
   unsigned int stride = gridDim.x * blockDim.x;
@@ -207,13 +212,14 @@ void cartProdBitmapH (Edge* H, char* P, unsigned long long edges_H, unsigned lon
     for (m = 0; m < vertices_G; m++){
       v1P = m*vertices_G + H[idx].v1;
       v2P = m*vertices_G + H[idx].v2; 
-      //bitmap_write(P, v1P, v2P, vertices_P);
+      printf("%llu-%llu\n", v1P, v2P);
+
       position = (v1P < v2P)*(v1P*vertices_P - (v1P*(v1P+1))/2 + v2P - v1P -1)
         + (v1P >= v2P)*(v2P*vertices_P - (v2P*(v2P+1))/2 + v1P - v2P -1);
-      mask = 0b10000000 >> (position % 8);
+      mask = 0x80000000 >> (position % 32);
       
-      // Critic zone, use atomic Or
-      P[position/8] = (mask | P[position/8]);
+      // To evict running condition, use atomic OR
+      atomicOr(&P[position/32], mask);
 		}
   }
 	return;
@@ -227,7 +233,8 @@ int main(){
   const char *directories_G[3] = {"./0.25/\0","./0.5/\0","./0.75/\0"};
   const char *directories_H[3] = {"./0.5/\0","./0.75/\0","./0.25/\0"};
   Edge *edge_array_G, *edge_array_H;
-  char *bitmap_P;
+  unsigned int *bitmap_P_VRAM;
+  unsigned int *bitmap_P_RAM;
   DIR *d_G, *d_H;
   clock_t delta_time;
   struct stat st = {0};
@@ -303,12 +310,16 @@ int main(){
 
       //printEdgeList(edge_array_G, edges_G);
       //printEdgeList(edge_array_H, edges_H);
-
+      
       // Initializing the resultant graph
       vertices_P = vertices_G*vertices_H;
-      size_P = bitmap_size(vertices_P);
-      cudaMallocManaged(&bitmap_P, size_P);
-      
+      size_P = bitmap_size_byte(vertices_P);
+      cudaMalloc(&bitmap_P_VRAM, size_P);
+      cudaMemset(&bitmap_P_VRAM, 0, size_P);
+      bitmap_P_RAM = (unsigned int *) calloc (bitmap_size_int(vertices_P), sizeof(unsigned int));
+
+      //print_bitmap_upper(bitmap_P, vertices_P);
+
       // Setting CUDA kernel execution parameters
       threadsPerBlock = 256;
       numberOfBlocks = 32 * numberOfSMs;
@@ -317,26 +328,29 @@ int main(){
       printf("Calculating %s.%s x %s.%s... ",vertices_string_G, edges_string_G, vertices_string_H, edges_string_H);
       fflush(stdout);
       delta_time = clock();
-      
+
       // ------------------------------------------------------------------
-      cartProdBitmapG <<<numberOfBlocks, threadsPerBlock>>> (edge_array_G, bitmap_P, edges_G, vertices_H, vertices_P);
-      cartProdBitmapH <<<numberOfBlocks, threadsPerBlock>>> (edge_array_H, bitmap_P, edges_H, vertices_G, vertices_P);
+      cartProdBitmapG <<<numberOfBlocks, threadsPerBlock>>> (edge_array_G, bitmap_P_VRAM, edges_G, vertices_H, vertices_P);
+      cartProdBitmapH <<<numberOfBlocks, threadsPerBlock>>> (edge_array_H, bitmap_P_VRAM, edges_H, vertices_G, vertices_P);
       cudaDeviceSynchronize();
-      cudaMemPrefetchAsync(bitmap_P, size_P, cudaCpuDeviceId);
+      cudaMemcpy(bitmap_P_RAM, bitmap_P_VRAM, size_P, cudaMemcpyDeviceToHost); // Synchronous
       // ------------------------------------------------------------------
 
       // Calculating passed time
       delta_time = clock() - delta_time;
       printf("Finished!\n");
-      print_bitmap_upper(bitmap_P, vertices_P);
+      //print_bitmap_upper(bitmap_P, vertices_P);
 
-      // Saving result as a file
+      /*
+      // Saving result as a file (consumes a LOT of time)
       generate_result_file_name(result_file_name, dirIndex,
         vertices_string_G, edges_string_G, vertices_string_H, edges_string_H);
-      write_result_file(result_file_name, bitmap_P, vertices_P);
+      write_result_file(result_file_name, bitmap_P_RAM, vertices_P);
+      */
 
       // Freeing result and edge lists
-      cudaFree(bitmap_P);
+      cudaFree(bitmap_P_VRAM);
+      free(bitmap_P_RAM);
       free(edge_array_G);
       free(edge_array_H);
 

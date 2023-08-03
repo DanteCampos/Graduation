@@ -294,21 +294,25 @@ int main(){
       delta_time = clock() - delta_time;
       printf("Finished!\n");
 
-      // Saving result as a file
+      /*
+      // Saving result as a file (consumes a LOT of time)
       generate_result_file_name(result_file_name, dirIndex,
         vertices_string_G, edges_string_G, vertices_string_H, edges_string_H);
       write_result_file(result_file_name, edge_array_P, edges_P);
-
+      */
+     
       // Freeing result and edge lists
       free(edge_array_P);
       free(edge_array_G);
       free(edge_array_H);
-
-      // Saving the time as a file
+      
+      
+      // Saving time as a file 
       generate_time_file_name(time_file_name, dirIndex,
         vertices_string_G, edges_string_G, vertices_string_H, edges_string_H);
       printf("Time saved as %s\n\n", time_file_name);
       write_time_file (time_file_name, delta_time);
+      
     }
     closedir(d_G);
     closedir(d_H);
