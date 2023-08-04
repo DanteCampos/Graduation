@@ -20,7 +20,7 @@ unsigned long long upper_triangle_position (unsigned long long i, unsigned long 
          + (i >=j)*(j*vertices - (j*(j+1))/2 + i - j -1);
 }
 
-// Returns the number of bytes needed for the bitmap
+// Returns the number of integers needed for the bitmap
 unsigned long long bitmap_size_int (unsigned long long vertices){
     unsigned long long size = (vertices*(vertices-1))/2;
     return size/32+(size%32 != 0);
@@ -179,13 +179,13 @@ void cartProdBitmapG (Edge* G, unsigned int* P, unsigned long long edges_G, unsi
   unsigned long long v1P, v2P;
   unsigned int mask;
 
-  unsigned long long idx = blockIdx.x * blockDim.x + threadIdx.x;
-  unsigned int stride = gridDim.x * blockDim.x;
+  unsigned long long idx = (unsigned long long)blockIdx.x * (unsigned long long)blockDim.x + (unsigned long long)threadIdx.x;
+  unsigned long long stride = (unsigned long long)gridDim.x * (unsigned long long)blockDim.x;
   for (; idx < edges_G; idx += stride){
+    //printf("G: %llu-%llu\n", G[idx].v1, G[idx].v2);
     for (m = 0; m < vertices_H; m++){
       v1P = G[idx].v1*vertices_H + m;
       v2P = G[idx].v2*vertices_H + m;
-      printf("%llu-%llu\n", v1P, v2P);
       
       position = (v1P < v2P)*(v1P*vertices_P - (v1P*(v1P+1))/2 + v2P - v1P -1)
         + (v1P >= v2P)*(v2P*vertices_P - (v2P*(v2P+1))/2 + v1P - v2P -1);
@@ -206,13 +206,14 @@ void cartProdBitmapH (Edge* H, unsigned int* P, unsigned long long edges_H, unsi
   unsigned long long v1P, v2P;
   unsigned int mask;
 
-  unsigned long long idx = blockIdx.x * blockDim.x + threadIdx.x;
-  unsigned int stride = gridDim.x * blockDim.x;
+  unsigned long long idx = (unsigned long long)blockIdx.x * (unsigned long long)blockDim.x + (unsigned long long)threadIdx.x;
+  unsigned long long stride = (unsigned long long)gridDim.x * (unsigned long long)blockDim.x;
+  
   for (; idx < edges_H; idx += stride){
+  //printf("H: %llu-%llu\n", H[idx].v1, H[idx].v2);
     for (m = 0; m < vertices_G; m++){
       v1P = m*vertices_G + H[idx].v1;
       v2P = m*vertices_G + H[idx].v2; 
-      printf("%llu-%llu\n", v1P, v2P);
 
       position = (v1P < v2P)*(v1P*vertices_P - (v1P*(v1P+1))/2 + v2P - v1P -1)
         + (v1P >= v2P)*(v2P*vertices_P - (v2P*(v2P+1))/2 + v1P - v2P -1);
@@ -222,6 +223,9 @@ void cartProdBitmapH (Edge* H, unsigned int* P, unsigned long long edges_H, unsi
       atomicOr(&P[position/32], mask);
 		}
   }
+
+
+
 	return;
 }
 
@@ -232,7 +236,7 @@ int main(){
   char *vertices_string_G, *edges_string_G, *vertices_string_H, *edges_string_H;
   const char *directories_G[3] = {"./0.25/\0","./0.5/\0","./0.75/\0"};
   const char *directories_H[3] = {"./0.5/\0","./0.75/\0","./0.25/\0"};
-  Edge *edge_array_G, *edge_array_H;
+  Edge *edge_array_G_RAM, *edge_array_H_RAM, *edge_array_G_VRAM, *edge_array_H_VRAM;
   unsigned int *bitmap_P_VRAM;
   unsigned int *bitmap_P_RAM;
   DIR *d_G, *d_H;
@@ -240,14 +244,20 @@ int main(){
   struct stat st = {0};
   struct dirent *dir_G;
   struct dirent *dir_H;
-  unsigned long long size_P;
+  size_t len_P_bytes;
+  size_t len_P_ints;
   size_t threadsPerBlock;
   size_t numberOfBlocks;
   int deviceId;
   int numberOfSMs;
+  cudaError_t error;
 
   cudaGetDevice(&deviceId);
   cudaDeviceGetAttribute(&numberOfSMs, cudaDevAttrMultiProcessorCount, deviceId);
+
+  // Setting CUDA kernel execution parameters
+  threadsPerBlock = 256;
+  numberOfBlocks = 1 * numberOfSMs;
 
   // Create directory CUDAtime/ if it doesn't exist 
   if (stat("CUDAtime", &st) == -1) {
@@ -305,24 +315,19 @@ int main(){
       vertices_H = atoi(vertices_string_H);
       edges_H = atoi(edges_string_H);
 
-      edge_array_G = edge_array_from_file(file_name_G, edges_G);
-      edge_array_H = edge_array_from_file(file_name_H, edges_H);
+      edge_array_G_RAM = edge_array_from_file(file_name_G, edges_G);
+      edge_array_H_RAM = edge_array_from_file(file_name_H, edges_H);
 
-      //printEdgeList(edge_array_G, edges_G);
-      //printEdgeList(edge_array_H, edges_H);
+      //printEdgeList(edge_array_G_RAM, edges_G);
+      //printEdgeList(edge_array_H_RAM, edges_H);
       
-      // Initializing the resultant graph
+      // Initializing host structure
       vertices_P = vertices_G*vertices_H;
-      size_P = bitmap_size_byte(vertices_P);
-      cudaMalloc(&bitmap_P_VRAM, size_P);
-      cudaMemset(&bitmap_P_VRAM, 0, size_P);
-      bitmap_P_RAM = (unsigned int *) calloc (bitmap_size_int(vertices_P), sizeof(unsigned int));
+      len_P_bytes = bitmap_size_byte(vertices_P);
+      len_P_ints = bitmap_size_int(vertices_P);
+      bitmap_P_RAM = (unsigned int *) calloc (len_P_ints, sizeof(unsigned int));
 
       //print_bitmap_upper(bitmap_P, vertices_P);
-
-      // Setting CUDA kernel execution parameters
-      threadsPerBlock = 256;
-      numberOfBlocks = 32 * numberOfSMs;
 
       // Starting to calculate the cartesian product
       printf("Calculating %s.%s x %s.%s... ",vertices_string_G, edges_string_G, vertices_string_H, edges_string_H);
@@ -330,10 +335,39 @@ int main(){
       delta_time = clock();
 
       // ------------------------------------------------------------------
-      cartProdBitmapG <<<numberOfBlocks, threadsPerBlock>>> (edge_array_G, bitmap_P_VRAM, edges_G, vertices_H, vertices_P);
-      cartProdBitmapH <<<numberOfBlocks, threadsPerBlock>>> (edge_array_H, bitmap_P_VRAM, edges_H, vertices_G, vertices_P);
+      // Initializing device structures
+      error = cudaMalloc(&bitmap_P_VRAM, len_P_bytes);
+      if(error != cudaSuccess)
+        printf("CUDA MALLOC BITMAP IN DEVICE error: %s\n", cudaGetErrorString(error));
+      error = cudaMalloc(&edge_array_G_VRAM, edges_G*sizeof(Edge));
+      if(error != cudaSuccess)
+        printf("CUDA MALLOC EDGES G IN DEVICE error: %s\n", cudaGetErrorString(error));
+      error = cudaMalloc(&edge_array_H_VRAM, edges_H*sizeof(Edge));
+      if(error != cudaSuccess)
+        printf("CUDA MALLOC EDGES H IN DEVICE error: %s\n", cudaGetErrorString(error));
+      error = cudaMemset(bitmap_P_VRAM, 0, len_P_bytes);
+      if(error != cudaSuccess)
+        printf("CUDA MEM SET BITMAP IN DEVICE error: %s\n", cudaGetErrorString(error));
+      error = cudaMemcpy(edge_array_G_VRAM, edge_array_G_RAM, edges_G*sizeof(Edge), cudaMemcpyHostToDevice); // Synchronous
+      if(error != cudaSuccess)
+        printf("CUDA MEM CPY G TO DEVICE error: %s\n", cudaGetErrorString(error));
+      error = cudaMemcpy(edge_array_H_VRAM, edge_array_H_RAM, edges_H*sizeof(Edge), cudaMemcpyHostToDevice); // Synchronous
+      if(error != cudaSuccess)
+        printf("CUDA MEM CPY H TO DEVICE error: %s\n", cudaGetErrorString(error));
+
+      // Calculating the cartesian product
+      cartProdBitmapG <<<numberOfBlocks, threadsPerBlock>>> (edge_array_G_VRAM, bitmap_P_VRAM, edges_G, vertices_H, vertices_P);
+      cartProdBitmapH <<<numberOfBlocks, threadsPerBlock>>> (edge_array_H_VRAM, bitmap_P_VRAM, edges_H, vertices_G, vertices_P);
       cudaDeviceSynchronize();
-      cudaMemcpy(bitmap_P_RAM, bitmap_P_VRAM, size_P, cudaMemcpyDeviceToHost); // Synchronous
+      
+      error = cudaGetLastError();
+      if(error != cudaSuccess)
+        printf("CUDA PROCESSING error: %s\n", cudaGetErrorString(error));
+
+      // Copying the result from device to host
+      error = cudaMemcpy(bitmap_P_RAM, bitmap_P_VRAM, len_P_bytes, cudaMemcpyDeviceToHost); // Synchronous
+      if(error != cudaSuccess)
+        printf("CUDA MEM CPY BITMAP TO HOST error: %s\n", cudaGetErrorString(error));
       // ------------------------------------------------------------------
 
       // Calculating passed time
@@ -350,9 +384,11 @@ int main(){
 
       // Freeing result and edge lists
       cudaFree(bitmap_P_VRAM);
+      cudaFree(edge_array_G_VRAM);
+      cudaFree(edge_array_H_VRAM);
       free(bitmap_P_RAM);
-      free(edge_array_G);
-      free(edge_array_H);
+      free(edge_array_G_RAM);
+      free(edge_array_H_RAM);
 
       // Saving the time as a file
       generate_time_file_name(time_file_name, dirIndex,
