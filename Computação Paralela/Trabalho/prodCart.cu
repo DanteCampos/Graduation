@@ -201,7 +201,7 @@ void cartProdBitmapG (Edge* G, unsigned int* P, unsigned long long edges_G, unsi
 // Calculates part of the cartesian product P = G x H iterating only edges of H
 // P is a bitmap of the adjancy matrix upper triangle
 __global__
-void cartProdBitmapH (Edge* H, unsigned int* P, unsigned long long edges_H, unsigned long long vertices_G, unsigned long long vertices_P){
+void cartProdBitmapH (Edge* H, unsigned int* P, unsigned long long edges_H, unsigned long long vertices_G, unsigned long long vertices_H, unsigned long long vertices_P){
   unsigned long long m, position;
   unsigned long long v1P, v2P;
   unsigned int mask;
@@ -212,8 +212,8 @@ void cartProdBitmapH (Edge* H, unsigned int* P, unsigned long long edges_H, unsi
   for (; idx < edges_H; idx += stride){
   //printf("H: %llu-%llu\n", H[idx].v1, H[idx].v2);
     for (m = 0; m < vertices_G; m++){
-      v1P = m*vertices_G + H[idx].v1;
-      v2P = m*vertices_G + H[idx].v2; 
+      v1P = m*vertices_H + H[idx].v1;
+      v2P = m*vertices_H + H[idx].v2; 
 
       position = (v1P < v2P)*(v1P*vertices_P - (v1P*(v1P+1))/2 + v2P - v1P -1)
         + (v1P >= v2P)*(v2P*vertices_P - (v2P*(v2P+1))/2 + v1P - v2P -1);
@@ -223,9 +223,6 @@ void cartProdBitmapH (Edge* H, unsigned int* P, unsigned long long edges_H, unsi
       atomicOr(&P[position/32], mask);
 		}
   }
-
-
-
 	return;
 }
 
@@ -335,39 +332,51 @@ int main(){
       delta_time = clock();
 
       // ------------------------------------------------------------------
-      // Initializing device structures
+      // Setting up the result bitmap
       error = cudaMalloc(&bitmap_P_VRAM, len_P_bytes);
       if(error != cudaSuccess)
         printf("CUDA MALLOC BITMAP IN DEVICE error: %s\n", cudaGetErrorString(error));
-      error = cudaMalloc(&edge_array_G_VRAM, edges_G*sizeof(Edge));
-      if(error != cudaSuccess)
-        printf("CUDA MALLOC EDGES G IN DEVICE error: %s\n", cudaGetErrorString(error));
-      error = cudaMalloc(&edge_array_H_VRAM, edges_H*sizeof(Edge));
-      if(error != cudaSuccess)
-        printf("CUDA MALLOC EDGES H IN DEVICE error: %s\n", cudaGetErrorString(error));
       error = cudaMemset(bitmap_P_VRAM, 0, len_P_bytes);
       if(error != cudaSuccess)
         printf("CUDA MEM SET BITMAP IN DEVICE error: %s\n", cudaGetErrorString(error));
+      
+      // Setting up G
+      error = cudaMalloc(&edge_array_G_VRAM, edges_G*sizeof(Edge));
+      if(error != cudaSuccess)
+        printf("CUDA MALLOC EDGES G IN DEVICE error: %s\n", cudaGetErrorString(error));
       error = cudaMemcpy(edge_array_G_VRAM, edge_array_G_RAM, edges_G*sizeof(Edge), cudaMemcpyHostToDevice); // Synchronous
       if(error != cudaSuccess)
         printf("CUDA MEM CPY G TO DEVICE error: %s\n", cudaGetErrorString(error));
+
+      // Calculating the partial cartesian product of G
+      cartProdBitmapG <<<numberOfBlocks, threadsPerBlock>>> (edge_array_G_VRAM, bitmap_P_VRAM, edges_G, vertices_H, vertices_P);
+      cudaDeviceSynchronize();
+      error = cudaGetLastError();
+      if(error != cudaSuccess)
+        printf("CUDA PROCESSING G error: %s\n", cudaGetErrorString(error));
+      cudaFree(edge_array_G_VRAM);
+      
+      // Setting up H
+      error = cudaMalloc(&edge_array_H_VRAM, edges_H*sizeof(Edge));
+      if(error != cudaSuccess)
+        printf("CUDA MALLOC EDGES H IN DEVICE error: %s\n", cudaGetErrorString(error));
       error = cudaMemcpy(edge_array_H_VRAM, edge_array_H_RAM, edges_H*sizeof(Edge), cudaMemcpyHostToDevice); // Synchronous
       if(error != cudaSuccess)
         printf("CUDA MEM CPY H TO DEVICE error: %s\n", cudaGetErrorString(error));
-
-      // Calculating the cartesian product
-      cartProdBitmapG <<<numberOfBlocks, threadsPerBlock>>> (edge_array_G_VRAM, bitmap_P_VRAM, edges_G, vertices_H, vertices_P);
-      cartProdBitmapH <<<numberOfBlocks, threadsPerBlock>>> (edge_array_H_VRAM, bitmap_P_VRAM, edges_H, vertices_G, vertices_P);
-      cudaDeviceSynchronize();
       
+      // Calculating the partial cartesian product of H
+      cartProdBitmapH <<<numberOfBlocks, threadsPerBlock>>> (edge_array_H_VRAM, bitmap_P_VRAM, edges_H, vertices_G, vertices_H, vertices_P);
+      cudaDeviceSynchronize();
       error = cudaGetLastError();
       if(error != cudaSuccess)
-        printf("CUDA PROCESSING error: %s\n", cudaGetErrorString(error));
-
+        printf("CUDA PROCESSING H error: %s\n", cudaGetErrorString(error));
+      cudaFree(edge_array_H_VRAM);
+      
       // Copying the result from device to host
       error = cudaMemcpy(bitmap_P_RAM, bitmap_P_VRAM, len_P_bytes, cudaMemcpyDeviceToHost); // Synchronous
       if(error != cudaSuccess)
         printf("CUDA MEM CPY BITMAP TO HOST error: %s\n", cudaGetErrorString(error));
+      cudaFree(bitmap_P_VRAM);
       // ------------------------------------------------------------------
 
       // Calculating passed time
@@ -383,9 +392,7 @@ int main(){
       */
 
       // Freeing result and edge lists
-      cudaFree(bitmap_P_VRAM);
-      cudaFree(edge_array_G_VRAM);
-      cudaFree(edge_array_H_VRAM);
+      
       free(bitmap_P_RAM);
       free(edge_array_G_RAM);
       free(edge_array_H_RAM);
