@@ -254,7 +254,7 @@ int main(){
 
   // Setting CUDA kernel execution parameters
   threadsPerBlock = 256;
-  numberOfBlocks = 1 * numberOfSMs;
+  numberOfBlocks = 30 * numberOfSMs;
 
   // Create directory CUDAtime/ if it doesn't exist 
   if (stat("CUDAtime", &st) == -1) {
@@ -324,14 +324,6 @@ int main(){
       len_P_ints = bitmap_size_int(vertices_P);
       bitmap_P_RAM = (unsigned int *) calloc (len_P_ints, sizeof(unsigned int));
 
-      //print_bitmap_upper(bitmap_P, vertices_P);
-
-      // Starting to calculate the cartesian product
-      printf("Calculating %s.%s x %s.%s... ",vertices_string_G, edges_string_G, vertices_string_H, edges_string_H);
-      fflush(stdout);
-      delta_time = clock();
-
-      // ------------------------------------------------------------------
       // Setting up the result bitmap
       error = cudaMalloc(&bitmap_P_VRAM, len_P_bytes);
       if(error != cudaSuccess)
@@ -339,7 +331,7 @@ int main(){
       error = cudaMemset(bitmap_P_VRAM, 0, len_P_bytes);
       if(error != cudaSuccess)
         printf("CUDA MEM SET BITMAP IN DEVICE error: %s\n", cudaGetErrorString(error));
-      
+
       // Setting up G
       error = cudaMalloc(&edge_array_G_VRAM, edges_G*sizeof(Edge));
       if(error != cudaSuccess)
@@ -348,14 +340,6 @@ int main(){
       if(error != cudaSuccess)
         printf("CUDA MEM CPY G TO DEVICE error: %s\n", cudaGetErrorString(error));
 
-      // Calculating the partial cartesian product of G
-      cartProdBitmapG <<<numberOfBlocks, threadsPerBlock>>> (edge_array_G_VRAM, bitmap_P_VRAM, edges_G, vertices_H, vertices_P);
-      cudaDeviceSynchronize();
-      error = cudaGetLastError();
-      if(error != cudaSuccess)
-        printf("CUDA PROCESSING G error: %s\n", cudaGetErrorString(error));
-      cudaFree(edge_array_G_VRAM);
-      
       // Setting up H
       error = cudaMalloc(&edge_array_H_VRAM, edges_H*sizeof(Edge));
       if(error != cudaSuccess)
@@ -363,26 +347,34 @@ int main(){
       error = cudaMemcpy(edge_array_H_VRAM, edge_array_H_RAM, edges_H*sizeof(Edge), cudaMemcpyHostToDevice); // Synchronous
       if(error != cudaSuccess)
         printf("CUDA MEM CPY H TO DEVICE error: %s\n", cudaGetErrorString(error));
+
+      // Starting to calculate the cartesian product
+      printf("Calculating %s.%s x %s.%s... ",vertices_string_G, edges_string_G, vertices_string_H, edges_string_H);
+      fflush(stdout);
       
-      // Calculating the partial cartesian product of H
+      // ------------------------------------------------------------------ 
+      delta_time = clock(); // Setting the timer
+
+      // Calculating the cartesian product
+      cartProdBitmapG <<<numberOfBlocks, threadsPerBlock>>> (edge_array_G_VRAM, bitmap_P_VRAM, edges_G, vertices_H, vertices_P);
       cartProdBitmapH <<<numberOfBlocks, threadsPerBlock>>> (edge_array_H_VRAM, bitmap_P_VRAM, edges_H, vertices_G, vertices_H, vertices_P);
       cudaDeviceSynchronize();
+      
+      /*
       error = cudaGetLastError();
       if(error != cudaSuccess)
-        printf("CUDA PROCESSING H error: %s\n", cudaGetErrorString(error));
-      cudaFree(edge_array_H_VRAM);
+        printf("CUDA PROCESSING error: %s\n", cudaGetErrorString(error));
+      */
+
+      delta_time = clock() - delta_time; // Calculating passed time
+      // ------------------------------------------------------------------
+      
+      printf("Finished!\n");
       
       // Copying the result from device to host
       error = cudaMemcpy(bitmap_P_RAM, bitmap_P_VRAM, len_P_bytes, cudaMemcpyDeviceToHost); // Synchronous
       if(error != cudaSuccess)
         printf("CUDA MEM CPY BITMAP TO HOST error: %s\n", cudaGetErrorString(error));
-      cudaFree(bitmap_P_VRAM);
-      // ------------------------------------------------------------------
-
-      // Calculating passed time
-      delta_time = clock() - delta_time;
-      printf("Finished!\n");
-      //print_bitmap_upper(bitmap_P, vertices_P);
 
       /*
       // Saving result as a file (consumes a LOT of time)
@@ -392,7 +384,9 @@ int main(){
       */
 
       // Freeing result and edge lists
-      
+      cudaFree(bitmap_P_VRAM);
+      cudaFree(edge_array_G_VRAM);
+      cudaFree(edge_array_H_VRAM);
       free(bitmap_P_RAM);
       free(edge_array_G_RAM);
       free(edge_array_H_RAM);
