@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <dirent.h>
 #include <string.h>
-#include <time.h>
+#include <sys/time.h> 
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
@@ -15,7 +15,7 @@ typedef struct{
 void generate_time_file_name(char time_file_name[], int dirIndex,
   char* vertices_string_G, char* edges_string_G, char* vertices_string_H, char* edges_string_H){
   
-  strcpy(time_file_name, "./SEQtime/");
+  strcpy(time_file_name, "./SEQtime/processing-");
   switch (dirIndex){
     case 0:
       strcat(time_file_name, "0.25x0.5-");
@@ -28,7 +28,7 @@ void generate_time_file_name(char time_file_name[], int dirIndex,
       break;
     default:
       printf("Time file name error\n");
-      break;
+      return;
   }
 
   strcat(time_file_name, vertices_string_G);
@@ -57,7 +57,7 @@ void generate_result_file_name(char result_file_name[], int dirIndex,
       break;
     default:
       printf("Result file name error\n");
-      break;
+      return;
   }
 
   strcat(result_file_name, vertices_string_G);
@@ -70,10 +70,10 @@ void generate_result_file_name(char result_file_name[], int dirIndex,
   strcat(result_file_name, ".result");
 }
 
-void write_time_file (char time_file_name[], clock_t delta_time){
+void write_time_file (char time_file_name[], double time){
   FILE *time_file;
   time_file = fopen(time_file_name, "w");
-  fprintf(time_file, "%ld\n",delta_time);
+  fprintf(time_file, "%lf\n",time);
   fclose(time_file);
 }
 
@@ -208,7 +208,8 @@ int main(){
   const char *directories_H[3] = {"./0.5/\0","./0.75/\0","./0.25/\0"};
   Edge *edge_array_G, *edge_array_H, *edge_array_P;
   DIR *d_G, *d_H;
-  clock_t delta_time;
+  struct timeval start_time, end_time;
+  double processing_time;
   struct stat st = {0};
   struct dirent *dir_G;
   struct dirent *dir_H;
@@ -282,7 +283,7 @@ int main(){
       // Starting to calculate the cartesian product
       printf("Calculating %s.%s x %s.%s... ",vertices_string_G, edges_string_G, vertices_string_H, edges_string_H);
       fflush(stdout);
-      delta_time = clock();
+      gettimeofday(&start_time, NULL);
       
       // ------------------------------------------------------------------
       edges_P = 0;
@@ -291,7 +292,9 @@ int main(){
       // ------------------------------------------------------------------
 
       // Calculating passed time
-      delta_time = clock() - delta_time;
+      gettimeofday(&end_time, NULL);
+      processing_time = (end_time.tv_sec - start_time.tv_sec) * 1000.0 + (end_time.tv_usec - start_time.tv_usec)/1000.0;
+      
       printf("Finished!\n");
 
       /*
@@ -305,13 +308,14 @@ int main(){
       free(edge_array_P);
       free(edge_array_G);
       free(edge_array_H);
-      
-      
+
+      printf("Processing time (ms): %lf\n", processing_time);
+
       // Saving time as a file 
       generate_time_file_name(time_file_name, dirIndex,
         vertices_string_G, edges_string_G, vertices_string_H, edges_string_H);
       printf("Time saved as %s\n\n", time_file_name);
-      write_time_file (time_file_name, delta_time);
+      write_time_file (time_file_name, processing_time);
       
     }
     closedir(d_G);

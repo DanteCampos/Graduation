@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <dirent.h>
 #include <string.h>
-#include <time.h>
+#include <sys/time.h> 
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
@@ -48,10 +48,26 @@ char bitmap_get(unsigned int bitmap[], unsigned long long i, unsigned long long 
     return result;
 }
 
-void generate_time_file_name(char time_file_name[], int dirIndex,
+// Generates the file name for saving the time
+// TYPE: 0 = host-to-device, 1 = processing, 2 = device-to-host
+void generate_time_file_name(char time_file_name[], int type, int dirIndex,
   char* vertices_string_G, char* edges_string_G, char* vertices_string_H, char* edges_string_H){
   
-  strcpy(time_file_name, "./CUDAtime/");
+  switch (type){
+    case 0:
+      strcpy(time_file_name, "./CUDAtime/host_to_device-");
+      break;
+    case 1:
+      strcpy(time_file_name, "./CUDAtime/processing-");
+      break;
+    case 2:
+      strcpy(time_file_name, "./CUDAtime/device_to_host-");
+      break;
+    default:
+      printf("Time file name error\n");
+      return;
+  }
+
   switch (dirIndex){
     case 0:
       strcat(time_file_name, "0.25x0.5-");
@@ -64,7 +80,7 @@ void generate_time_file_name(char time_file_name[], int dirIndex,
       break;
     default:
       printf("Time file name error\n");
-      break;
+      return;
   }
 
   strcat(time_file_name, vertices_string_G);
@@ -93,7 +109,7 @@ void generate_result_file_name(char result_file_name[], int dirIndex,
       break;
     default:
       printf("Result file name error\n");
-      break;
+      return;
   }
 
   strcat(result_file_name, vertices_string_G);
@@ -106,10 +122,10 @@ void generate_result_file_name(char result_file_name[], int dirIndex,
   strcat(result_file_name, ".result");
 }
 
-void write_time_file (char time_file_name[], clock_t delta_time){
+void write_time_file (char time_file_name[], double time){
   FILE *time_file;
   time_file = fopen(time_file_name, "w");
-  fprintf(time_file, "%ld\n",delta_time);
+  fprintf(time_file, "%lf\n",time);
   fclose(time_file);
 }
 
@@ -237,7 +253,8 @@ int main(){
   unsigned int *bitmap_P_VRAM;
   unsigned int *bitmap_P_RAM;
   DIR *d_G, *d_H;
-  clock_t delta_time;
+  struct timeval start_time, end_time;
+  double host_to_device_time, device_to_host_time, processing_time;
   struct stat st = {0};
   struct dirent *dir_G;
   struct dirent *dir_H;
@@ -314,9 +331,6 @@ int main(){
 
       edge_array_G_RAM = edge_array_from_file(file_name_G, edges_G);
       edge_array_H_RAM = edge_array_from_file(file_name_H, edges_H);
-
-      //printEdgeList(edge_array_G_RAM, edges_G);
-      //printEdgeList(edge_array_H_RAM, edges_H);
       
       // Initializing host structure
       vertices_P = vertices_G*vertices_H;
@@ -332,6 +346,9 @@ int main(){
       if(error != cudaSuccess)
         printf("CUDA MEM SET BITMAP IN DEVICE error: %s\n", cudaGetErrorString(error));
 
+      // Starting host-to-device memory transfer timer
+      gettimeofday(&start_time, NULL);
+      
       // Setting up G
       error = cudaMalloc(&edge_array_G_VRAM, edges_G*sizeof(Edge));
       if(error != cudaSuccess)
@@ -347,13 +364,18 @@ int main(){
       error = cudaMemcpy(edge_array_H_VRAM, edge_array_H_RAM, edges_H*sizeof(Edge), cudaMemcpyHostToDevice); // Synchronous
       if(error != cudaSuccess)
         printf("CUDA MEM CPY H TO DEVICE error: %s\n", cudaGetErrorString(error));
+      
+      // Saving host-to-device memory transfer timer
+      gettimeofday(&end_time, NULL);
+      host_to_device_time = (end_time.tv_sec - start_time.tv_sec) * 1000.0 + (end_time.tv_usec - start_time.tv_usec)/1000.0;
 
       // Starting to calculate the cartesian product
       printf("Calculating %s.%s x %s.%s... ",vertices_string_G, edges_string_G, vertices_string_H, edges_string_H);
       fflush(stdout);
       
       // ------------------------------------------------------------------ 
-      delta_time = clock(); // Setting the timer
+      // Starting processing timer
+      gettimeofday(&start_time, NULL);
 
       // Calculating the cartesian product
       cartProdBitmapG <<<numberOfBlocks, threadsPerBlock>>> (edge_array_G_VRAM, bitmap_P_VRAM, edges_G, vertices_H, vertices_P);
@@ -366,16 +388,24 @@ int main(){
         printf("CUDA PROCESSING error: %s\n", cudaGetErrorString(error));
       */
 
-      delta_time = clock() - delta_time; // Calculating passed time
+      // Saving processing timer
+      gettimeofday(&end_time, NULL);
+      processing_time = (end_time.tv_sec - start_time.tv_sec) * 1000.0 + (end_time.tv_usec - start_time.tv_usec)/1000.0;
       // ------------------------------------------------------------------
-      
       printf("Finished!\n");
       
+      // Starting device-to-host memory transfer timer
+      gettimeofday(&start_time, NULL);
+
       // Copying the result from device to host
       error = cudaMemcpy(bitmap_P_RAM, bitmap_P_VRAM, len_P_bytes, cudaMemcpyDeviceToHost); // Synchronous
       if(error != cudaSuccess)
         printf("CUDA MEM CPY BITMAP TO HOST error: %s\n", cudaGetErrorString(error));
 
+      // Saving device-to-host memory transfer timer
+      gettimeofday(&end_time, NULL);
+      device_to_host_time = (end_time.tv_sec - start_time.tv_sec) * 1000.0 + (end_time.tv_usec - start_time.tv_usec)/1000.0;
+      
       /*
       // Saving result as a file (consumes a LOT of time)
       generate_result_file_name(result_file_name, dirIndex,
@@ -391,11 +421,26 @@ int main(){
       free(edge_array_G_RAM);
       free(edge_array_H_RAM);
 
-      // Saving the time as a file
-      generate_time_file_name(time_file_name, dirIndex,
+      printf("Host to device memory transfer time (ms): %lf\n", host_to_device_time);
+      printf("Processing time (ms): %lf\n", processing_time);
+      printf("Device to host memory transfer time (ms): %lf\n", device_to_host_time);
+
+      // Saving times as files
+      generate_time_file_name(time_file_name, 0, dirIndex,
         vertices_string_G, edges_string_G, vertices_string_H, edges_string_H);
-      printf("Time saved as %s\n\n", time_file_name);
-      write_time_file (time_file_name, delta_time);
+      write_time_file (time_file_name, host_to_device_time);
+      printf("Host to device memory transfer time saved as %s\n", time_file_name);
+
+      generate_time_file_name(time_file_name, 1, dirIndex,
+        vertices_string_G, edges_string_G, vertices_string_H, edges_string_H);
+      write_time_file (time_file_name, processing_time);
+      printf("Processing time saved as %s\n", time_file_name);
+
+      generate_time_file_name(time_file_name, 1, dirIndex,
+        vertices_string_G, edges_string_G, vertices_string_H, edges_string_H);
+      write_time_file (time_file_name, device_to_host_time);
+      printf("Device to host memory transfer time saved as %s\n\n", time_file_name);
+
     }
     closedir(d_G);
     closedir(d_H);
