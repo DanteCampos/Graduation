@@ -242,7 +242,7 @@ void cartProdBitmapH (Edge* H, unsigned int* P, unsigned long long edges_H, unsi
 	return;
 }
 
-int main(){
+int main(int argc, char** argv){
   unsigned long long vertices_G, vertices_H, vertices_P, edges_G, edges_H;
   int dirIndex;
   char file_name_G[100], file_name_H[100], time_file_name[100], result_file_name[100];
@@ -264,14 +264,25 @@ int main(){
   size_t numberOfBlocks;
   int deviceId;
   int numberOfSMs;
+  int arg_n_threads;
+  int arg_n_blocks;
   cudaError_t error;
 
+  // Dealing with arguments
+  if (argc != 3){
+    printf("Must receive 2 arguments: <n_threads_per_block> <n_blocks_per_SM>");
+    return 0;
+  }
+  arg_n_threads = atoi(argv[1]);
+  arg_n_blocks = atoi(argv[2]);
+
+  // Getting device info
   cudaGetDevice(&deviceId);
   cudaDeviceGetAttribute(&numberOfSMs, cudaDevAttrMultiProcessorCount, deviceId);
 
   // Setting CUDA kernel execution parameters
-  threadsPerBlock = 64;
-  numberOfBlocks = 1 * numberOfSMs;
+  threadsPerBlock = arg_n_threads;
+  numberOfBlocks = arg_n_blocks * numberOfSMs;
 
   // Create directory CUDAtime/ if it doesn't exist 
   if (stat("CUDAtime", &st) == -1) {
