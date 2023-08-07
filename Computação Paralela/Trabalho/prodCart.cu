@@ -347,7 +347,9 @@ int main(int argc, char** argv){
       vertices_P = vertices_G*vertices_H;
       len_P_bytes = bitmap_size_byte(vertices_P);
       len_P_ints = bitmap_size_int(vertices_P);
-      bitmap_P_RAM = (unsigned int *) calloc (len_P_ints, sizeof(unsigned int));
+      error = cudaMallocHost (&bitmap_P_RAM, len_P_bytes);
+      if(error != cudaSuccess)
+        printf("CUDA MALLOC BITMAP IN HOST error: %s\n", cudaGetErrorString(error));
 
       // Setting up the result bitmap
       error = cudaMalloc(&bitmap_P_VRAM, len_P_bytes);
@@ -428,7 +430,7 @@ int main(int argc, char** argv){
       cudaFree(bitmap_P_VRAM);
       cudaFree(edge_array_G_VRAM);
       cudaFree(edge_array_H_VRAM);
-      free(bitmap_P_RAM);
+      cudaFreeHost(bitmap_P_RAM);
       free(edge_array_G_RAM);
       free(edge_array_H_RAM);
 
