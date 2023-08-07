@@ -270,8 +270,8 @@ int main(){
   cudaDeviceGetAttribute(&numberOfSMs, cudaDevAttrMultiProcessorCount, deviceId);
 
   // Setting CUDA kernel execution parameters
-  threadsPerBlock = 256;
-  numberOfBlocks = 30 * numberOfSMs;
+  threadsPerBlock = 64;
+  numberOfBlocks = 1 * numberOfSMs;
 
   // Create directory CUDAtime/ if it doesn't exist 
   if (stat("CUDAtime", &st) == -1) {
@@ -436,7 +436,7 @@ int main(){
       write_time_file (time_file_name, processing_time);
       printf("Processing time saved as %s\n", time_file_name);
 
-      generate_time_file_name(time_file_name, 1, dirIndex,
+      generate_time_file_name(time_file_name, 2, dirIndex,
         vertices_string_G, edges_string_G, vertices_string_H, edges_string_H);
       write_time_file (time_file_name, device_to_host_time);
       printf("Device to host memory transfer time saved as %s\n\n", time_file_name);
